@@ -20,6 +20,7 @@ limitations under the License.
 #include "nvblox/core/camera.h"
 #include "nvblox/core/image.h"
 #include "nvblox/core/lidar.h"
+#include "nvblox/core/radar.h"
 #include "nvblox/core/types.h"
 #include "nvblox/core/unified_vector.h"
 
@@ -104,6 +105,25 @@ class ViewCalculator {
       const float block_size, const float truncation_distance_m,
       const float max_integration_distance_m);
 
+  /// Gets blocks which fall into the radar view (using a depth image)
+  /// Performs ray casting to get the blocks in view
+  /// Operates by ray through the grid returning the blocks traversed in the ray
+  /// casting process. The number of pixels on the image plane raycast is
+  /// determined by the class parameter raycast_subsampling_factor.
+  /// @param depth_frame the depth image.
+  /// @param T_L_C The pose of the camera. Supplied as a Transform mapping
+  /// points in the camera frame (C) to the layer frame (L).
+  /// @param Radar The radar (intrinsics) model.
+  /// @param block_size The size of the blocks in the layer.
+  /// @param truncation_distance_m The truncation distance.
+  /// @param max_integration_distance_m The max integration distance.
+  /// @return a vector of the 3D indices of the blocks in view.
+  std::vector<Index3D> getBlocksInImageViewRaycast(
+      const DepthImage& depth_frame, const Transform& T_L_C, const Radar& radar,
+      const float block_size, const float truncation_distance_m,
+      const float max_integration_distance_m);
+
+
   /// A parameter getter
   /// The rate at which we subsample pixels to raycast. Note that we always
   /// raycast the edges of the frame, no matter the subsample rate. For example,
@@ -159,7 +179,7 @@ class ViewCalculator {
 
   // Templated version of the public getBlocksInImageViewRaycast() methods.
   // Internally we use this templated version of this function called with
-  // Camera and Lidar classes.
+  // Camera ,Lidar and Radar classes.
   template <typename SensorType>
   std::vector<Index3D> getBlocksInImageViewRaycastTemplate(
       const DepthImage& depth_frame, const Transform& T_L_C,

@@ -296,6 +296,16 @@ std::vector<Index3D> ViewCalculator::getBlocksInImageViewRaycast(
                                              max_integration_distance_m);
 }
 
+// Radar
+std::vector<Index3D> ViewCalculator::getBlocksInImageViewRaycast(
+    const DepthImage& depth_frame, const Transform& T_L_C, const Radar& radar,
+    const float block_size, const float truncation_distance_m,
+    const float max_integration_distance_m) {
+  return getBlocksInImageViewRaycastTemplate(depth_frame, T_L_C, radar,
+                                             block_size, truncation_distance_m,
+                                             max_integration_distance_m);
+}
+
 template <typename SensorType>
 void ViewCalculator::getBlocksByRaycastingCorners(
     const Transform& T_L_C, const SensorType& camera,
