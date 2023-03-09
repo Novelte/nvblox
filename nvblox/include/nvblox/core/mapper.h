@@ -106,6 +106,15 @@ class RgbdMapper : public MapperBase {
   void integrateLidarDepth(const DepthImage& depth_frame,
                            const Transform& T_L_C, const Lidar& lidar);
 
+  /// Integrates a Radar scan into the reconstruction.
+  ///@param depth_frame Depth image representing the Radar scan. To convert a
+  ///                   radar scan to a DepthImage see TODOOO.
+  ///@param T_L_C Pose of the Radar, specified as a transform from Radar-frame
+  ///             to Layer-frame transform.
+  ///@param radar Intrinsics model of the Radar.
+  void integrateRadarDepth(const DepthImage& depth_frame,
+                           const Transform& T_L_C, const Radar& radar);
+
   /// Updates the mesh blocks which require an update
   /// @return The indices of the blocks that were updated in this call.
   std::vector<Index3D> updateMesh();
@@ -198,6 +207,14 @@ class RgbdMapper : public MapperBase {
   const ProjectiveTsdfIntegrator& lidar_tsdf_integrator() const {
     return lidar_tsdf_integrator_;
   }
+
+  /// Getter
+  ///@return const ProjectiveTsdfIntegrator& TSDF integrator used for
+  ///        3D LiDAR scan integration.
+  const ProjectiveTsdfIntegrator& radar_tsdf_integrator() const {
+    return radar_tsdf_integrator_;
+  }
+
   /// Getter
   ///@return const ProjectiveColorIntegrator& Color integrator.
   const ProjectiveColorIntegrator& color_integrator() const {
@@ -219,6 +236,12 @@ class RgbdMapper : public MapperBase {
   ///        3D LiDAR scan integration.
   ProjectiveTsdfIntegrator& lidar_tsdf_integrator() {
     return lidar_tsdf_integrator_;
+  }
+  /// Getter
+  ///@return const ProjectiveTsdfIntegrator& TSDF integrator used for
+  ///        3D LiDAR scan integration.
+  ProjectiveTsdfIntegrator& radar_tsdf_integrator() {
+    return radar_tsdf_integrator_;
   }
   /// Getter
   ///@return const ProjectiveColorIntegrator& Color integrator.
@@ -254,6 +277,7 @@ class RgbdMapper : public MapperBase {
   /// Integrators
   ProjectiveTsdfIntegrator tsdf_integrator_;
   ProjectiveTsdfIntegrator lidar_tsdf_integrator_;
+  ProjectiveTsdfIntegrator radar_tsdf_integrator_;
   ProjectiveColorIntegrator color_integrator_;
   MeshIntegrator mesh_integrator_;
   EsdfIntegrator esdf_integrator_;

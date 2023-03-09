@@ -56,6 +56,19 @@ void RgbdMapper::integrateLidarDepth(const DepthImage& depth_frame,
   esdf_blocks_to_update_.insert(updated_blocks.begin(), updated_blocks.end());
 }
 
+void RgbdMapper::integrateRadarDepth(const DepthImage& depth_frame,
+                                     const Transform& T_L_C,
+                                     const Radar& radar) {
+  // Call the integrator.
+  std::vector<Index3D> updated_blocks;
+  radar_tsdf_integrator_.integrateFrame(
+      depth_frame, T_L_C, radar, layers_.getPtr<TsdfLayer>(), &updated_blocks);
+
+  // Update all the relevant queues.
+  mesh_blocks_to_update_.insert(updated_blocks.begin(), updated_blocks.end());
+  esdf_blocks_to_update_.insert(updated_blocks.begin(), updated_blocks.end());
+}
+
 void RgbdMapper::integrateColor(const ColorImage& color_frame,
                                 const Transform& T_L_C, const Camera& camera) {
   color_integrator_.integrateFrame(color_frame, T_L_C, camera,
