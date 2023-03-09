@@ -35,10 +35,13 @@ Radar::Radar(int num_azimuth_divisions, int num_elevation_divisions,
   // Note(alexmillane): Note the difference in division by N vs. (N-1) below.
   // This is because in the azimuth direction there's a wrapping around. The
   // point at pi/-pi is not double sampled, generating this difference.
-  rads_per_pixel_elevation_ =
-      vertical_fov_rad / static_cast<float>(num_elevation_divisions_ - 1);
   rads_per_pixel_azimuth_ =
-      horizontal_fov_rad / static_cast<float>(num_azimuth_divisions_ - 1);
+      horizontal_fov_rad_ / static_cast<float>(num_azimuth_divisions_ - 1);
+  rads_per_pixel_elevation_ =
+      vertical_fov_rad_ / static_cast<float>(num_elevation_divisions_ - 1);
+
+  // printf("rads_per_pixel_elevation_   %f\n", rads_per_pixel_elevation_);
+  // printf("rads_per_pixel_azimuth_     %f\n", rads_per_pixel_azimuth_);
 
   // Inverse of the above
   elevation_pixels_per_rad_ = 1.0f / rads_per_pixel_elevation_;
@@ -54,8 +57,15 @@ Radar::Radar(int num_azimuth_divisions, int num_elevation_divisions,
                                           rads_per_pixel_elevation_ / 2.0f);
 
   start_azimuth_angle_rad_ = M_PI / 2.0f - (horizontal_fov_rad / 2.0f +
-                                          rads_per_pixel_elevation_ / 2.0f);
+                                          rads_per_pixel_azimuth_ / 2.0f);
+  
+  // printf("start_azimuth_angle      %f\n", start_azimuth_angle_rad_);
+  // printf("num_azimuth_divisions_   %d\n", num_azimuth_divisions_);
+  // printf("horizontal_fov_rad       %f\n\n", horizontal_fov_rad);
 
+  // printf("start_polar_angle        %f\n", start_polar_angle_rad_);
+  // printf("num_elevation_divisions_ %d\n", num_elevation_divisions_);
+  // printf("vertical_fov_rad_        %f\n\n", vertical_fov_rad_);
 }
 
 int Radar::num_azimuth_divisions() const { return num_azimuth_divisions_; }
@@ -82,23 +92,29 @@ bool Radar::project(const Vector3f& p_C, Vector2f* u_C) const {
     return false;
   }
   const float polar_angle_rad = acos(p_C.z() / r);
-  const float azimuth_angle_rad = atan2(p_C.y(), p_C.x());
+  const float azimuth_angle_rad = atan2(p_C.x(), p_C.y());
 
   // To image plane coordinates
-  float v_float =
-      (polar_angle_rad - start_polar_angle_rad_) * elevation_pixels_per_rad_;
   float u_float =
       (azimuth_angle_rad - start_azimuth_angle_rad_) * azimuth_pixels_per_rad_;
+  float v_float =
+      (polar_angle_rad - start_polar_angle_rad_) * elevation_pixels_per_rad_;
 
-  // Catch wrap around issues.
-  if (u_float >= num_azimuth_divisions_) {
-    u_float -= num_azimuth_divisions_;
+  // Points out of FOV
+  if (u_float < 0.0f || u_float >= (float)num_azimuth_divisions_) {
+    // printf("failing u_float \n");    
+    // printf("x %f     y: %f\n", p_C.x(), p_C.y());
+    // printf("azimuth_angle_rad       %f \n", azimuth_angle_rad);
+    // printf("ufloat                  %f \n", u_float);
+    return false;
   }
-
   // Points out of FOV
   // NOTE(alexmillane): It should be impossible to escape the -pi-to-pi range in
   // azimuth due to wrap around this. Therefore we don't check.
-  if (v_float < 0.0f || v_float >= num_elevation_divisions_) {
+  if (v_float < 0.0f || v_float >= (float)num_elevation_divisions_) {
+    // printf("failing v_float \n");
+    // printf("polar_angle_rad         %f \n", polar_angle_rad);
+    // printf("vfloat                  %f \n", v_float);
     return false;
   }
 
@@ -145,8 +161,8 @@ Vector3f Radar::vectorFromImagePlaneCoordinates(const Vector2f& u_C) const {
       u_C.y() * rads_per_pixel_elevation_ + start_polar_angle_rad_;
   const float azimuth_angle_rad =
       u_C.x() * rads_per_pixel_azimuth_ + start_azimuth_angle_rad_;
-  return Vector3f(cos(azimuth_angle_rad) * sin(polar_angle_rad),
-                  sin(azimuth_angle_rad) * sin(polar_angle_rad),
+  return Vector3f(sin(azimuth_angle_rad) * sin(polar_angle_rad),
+                  cos(azimuth_angle_rad) * sin(polar_angle_rad),
                   cos(polar_angle_rad));
 }
 
@@ -165,9 +181,9 @@ AxisAlignedBoundingBox Radar::getViewAABB(const Transform& T_L_C,
 
   // Remark, how does this fit in Radar Case should get the corner
   AxisAlignedBoundingBox box(
-      Vector3f(-max_depth, 0,
+      Vector3f(0, -max_depth * sin(horizontal_fov_rad_ / 2.0f),
                -max_depth * sin(vertical_fov_rad_ / 2.0f)),
-      Vector3f(max_depth, max_depth,
+      Vector3f(max_depth, max_depth * sin(horizontal_fov_rad_ / 2.0f),
                max_depth * sin(vertical_fov_rad_ / 2.0f)));
 
   // Translate the box to the sensor's location (note that orientation doesn't

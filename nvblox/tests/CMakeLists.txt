@@ -141,6 +141,10 @@ add_executable(test_lidar_integration test_lidar_integration.cpp)
 target_link_libraries(test_lidar_integration nvblox_test_utils)
 gtest_discover_tests(test_lidar_integration ${TEST_OPTIONS})
 
+add_executable(test_radar test_radar.cpp)
+target_link_libraries(test_radar nvblox_test_utils)
+gtest_discover_tests(test_radar ${TEST_OPTIONS})
+
 add_executable(test_fuser test_fuser.cpp)
 target_link_libraries(test_fuser nvblox_test_utils)
 gtest_discover_tests(test_fuser ${TEST_OPTIONS})
