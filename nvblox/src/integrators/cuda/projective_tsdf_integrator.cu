@@ -513,9 +513,9 @@ void ProjectiveTsdfIntegrator::integrateBlocks(const DepthImage& depth_frame,
 
   // Metric params
   const float linear_interpolation_max_allowable_difference_m =
-      lidar_linear_interpolation_max_allowable_difference_vox_ * voxel_size;
+      radar_linear_interpolation_max_allowable_difference_vox_ * voxel_size;
   const float nearest_interpolation_max_allowable_squared_dist_to_ray_m =
-      std::pow(lidar_nearest_interpolation_max_allowable_dist_to_ray_vox_ *
+      std::pow(radar_nearest_interpolation_max_allowable_dist_to_ray_vox_ *
                    voxel_size,
                2);
 
