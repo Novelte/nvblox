@@ -45,6 +45,14 @@ struct EsdfVoxel {
 
 struct ColorVoxel {
   Color color = Color::Gray();
+  Color sid = Color::Gray();
+  // How many observations/how confident we are in this observation.
+  float weight = 0.0f;
+  float weight_sid = 0.0f;
+};
+
+struct SemanticVoxel {
+  Color sid = Color::Gray();
   // How many observations/how confident we are in this observation.
   float weight = 0.0f;
 };

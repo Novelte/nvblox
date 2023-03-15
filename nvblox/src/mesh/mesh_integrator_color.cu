@@ -36,6 +36,17 @@ void MeshIntegrator::colorMesh(const ColorLayer& color_layer,
   colorMeshGPU(color_layer, block_indices, mesh_layer);
 }
 
+void MeshIntegrator::colorMesh(const SemanticLayer& semantic_layer,
+                               BlockLayer<MeshBlock>* mesh_layer) {
+  colorMesh(semantic_layer, mesh_layer->getAllBlockIndices(), mesh_layer);
+}
+void MeshIntegrator::colorMesh(const SemanticLayer& semantic_layer,
+                               const std::vector<Index3D>& block_indices,
+                               BlockLayer<MeshBlock>* mesh_layer) {
+  // Default choice is GPU
+  colorMeshGPU(semantic_layer, block_indices, mesh_layer);
+}
+
 //
 /* Color Mesh blocks on the GPU
  *
@@ -94,6 +105,64 @@ __global__ void colorMeshBlockByClosestColorVoxel(
   }
 }
 
+//
+/* Color Mesh blocks on the GPU
+ *
+ * Call with
+ * - one ThreadBlock per VoxelBlock, GridDim 1D
+ * - BlockDim 1D, any size: we implement a stridded access pattern over
+ *   MeshBlock verticies
+ *
+ * @param: color_blocks:     a list of color blocks which correspond in position
+ *                           to mesh_blocks
+ * @param: block_indices:    a list of blocks indices.
+ * @param: cuda_mesh_blocks: a list of mesh_blocks to be colored.
+ */
+__global__ void colorMeshBlockByClosestColorVoxel(
+    const SemanticBlock** color_blocks, const Index3D* block_indices,
+    const float block_size, const float voxel_size,
+    CudaMeshBlock* cuda_mesh_blocks) {
+  // Block
+  const SemanticBlock* color_block_ptr = color_blocks[blockIdx.x];
+  const Index3D block_index = block_indices[blockIdx.x];
+  CudaMeshBlock cuda_mesh_block = cuda_mesh_blocks[blockIdx.x];
+
+  // The position of this block in the layer
+  const Vector3f p_L_B_m = getPositionFromBlockIndex(block_size, block_index);
+
+  // Interate through MeshBlock vertices - Stidded access pattern
+  for (int i = threadIdx.x; i < cuda_mesh_block.vertices_size; i += blockDim.x) {
+    // The position of this vertex in the layer
+    const Vector3f p_L_V_m = cuda_mesh_block.vertices[i];
+
+    // The position of this vertex in the block
+    const Vector3f p_B_V_m = p_L_V_m - p_L_B_m;
+
+    // Convert this to a voxel index
+    Index3D voxel_idx_in_block = (p_B_V_m.array() / voxel_size).cast<int>();
+
+    // NOTE(alexmillane): Here we make some assumptions.
+    // - We assume that the closest voxel to p_L_V is in the ColorBlock
+    //   co-located with the MeshBlock from which p_L_V was drawn.
+    // - This is will (very?) occationally be incorrect when mesh vertices
+    //   escape block boundaries. However, making this assumption saves us any
+    //   neighbour calculations.
+    constexpr size_t KVoxelsPerSizeMinusOne =
+        VoxelBlock<SemanticVoxel>::kVoxelsPerSide - 1;
+    voxel_idx_in_block =
+        voxel_idx_in_block.array().min(KVoxelsPerSizeMinusOne).max(0);
+
+    // Get the color voxel
+    const SemanticVoxel color_voxel =
+        color_block_ptr->voxels[voxel_idx_in_block.x()]  // NOLINT
+                               [voxel_idx_in_block.y()]  // NOLINT
+                               [voxel_idx_in_block.z()];
+
+    // Write the color out to global memory
+    cuda_mesh_block.colors[i] = color_voxel.sid;
+  }
+}
+
 __global__ void colorMeshBlocksConstant(Color color,
                                         CudaMeshBlock* cuda_mesh_blocks) {
   // Each threadBlock operates on a single MeshBlock
@@ -144,8 +213,9 @@ void colorMeshBlocksConstantGPU(const std::vector<Index3D>& block_indices,
   checkCudaErrors(cudaFree(cuda_mesh_block_device_ptrs));
 }
 
+template <typename VoxelType>
 void colorMeshBlockByClosestColorVoxelGPU(
-    const ColorLayer& color_layer, const std::vector<Index3D>& block_indices,
+    const VoxelBlockLayer<VoxelType>& color_layer, const std::vector<Index3D>& block_indices,
     MeshLayer* mesh_layer, cudaStream_t cuda_stream) {
   CHECK_NOTNULL(mesh_layer);
   if (block_indices.size() == 0) {
@@ -155,7 +225,7 @@ void colorMeshBlockByClosestColorVoxelGPU(
   // Get the locations (on device) of the color blocks
   // NOTE(alexmillane): This function assumes that all block_indices have been
   // checked to exist in color_layer.
-  std::vector<const ColorBlock*> color_blocks =
+  std::vector<const VoxelBlock<VoxelType>*> color_blocks =
       getBlockPtrsFromIndices(block_indices, color_layer);
 
   // Prepare CudaMeshBlocks, which are effectively containers of device pointers
@@ -167,9 +237,9 @@ void colorMeshBlockByClosestColorVoxelGPU(
   }
 
   // Allocate
-  const ColorBlock** color_block_device_ptrs;
+  const VoxelBlock<VoxelType>** color_block_device_ptrs;
   checkCudaErrors(cudaMalloc(&color_block_device_ptrs,
-                             color_blocks.size() * sizeof(ColorBlock*)));
+                             color_blocks.size() * sizeof(VoxelBlock<VoxelType>*)));
   Index3D* block_indices_device_ptr;
   checkCudaErrors(cudaMalloc(&block_indices_device_ptr,
                              block_indices.size() * sizeof(Index3D)));
@@ -179,7 +249,7 @@ void colorMeshBlockByClosestColorVoxelGPU(
 
   // Host -> GPU transfers
   checkCudaErrors(cudaMemcpyAsync(color_block_device_ptrs, color_blocks.data(),
-                                  color_blocks.size() * sizeof(ColorBlock*),
+                                  color_blocks.size() * sizeof(VoxelBlock<VoxelType>*),
                                   cudaMemcpyHostToDevice, cuda_stream));
   checkCudaErrors(cudaMemcpyAsync(block_indices_device_ptr,
                                   block_indices.data(),
@@ -265,6 +335,60 @@ void MeshIntegrator::colorMeshGPU(
                              default_mesh_color_, mesh_layer, cuda_stream_);
 }
 
+void MeshIntegrator::colorMeshGPU(const SemanticLayer& semantic_layer,
+                                  MeshLayer* mesh_layer) {
+  colorMeshGPU(semantic_layer, mesh_layer->getAllBlockIndices(), mesh_layer);
+}
+
+void MeshIntegrator::colorMeshGPU(
+    const SemanticLayer& semantic_layer,
+    const std::vector<Index3D>& requested_block_indices,
+    MeshLayer* mesh_layer) {
+  CHECK_NOTNULL(mesh_layer);
+  CHECK_EQ(semantic_layer.block_size(), mesh_layer->block_size());
+
+  // NOTE(alexmillane): Generally, some of the MeshBlocks which we are
+  // "coloring" will not have data in the color layer. HOWEVER, for colored
+  // MeshBlocks (ie with non-empty color members), the size of the colors must
+  // match vertices. Therefore we "color" all requested block_indices in two
+  // parts:
+  // - The first part using the color layer, and
+  // - the second part a constant color.
+
+  // Check for each index, that the MeshBlock exists, and if it does
+  // allocate space for color.
+  std::vector<Index3D> block_indices;
+  block_indices.reserve(requested_block_indices.size());
+  std::for_each(
+      requested_block_indices.begin(), requested_block_indices.end(),
+      [&mesh_layer, &block_indices](const Index3D& block_idx) {
+        if (mesh_layer->isBlockAllocated(block_idx)) {
+          mesh_layer->getBlockAtIndex(block_idx)->expandColorsToMatchVertices();
+          block_indices.push_back(block_idx);
+        }
+      });
+
+  // Split block indices into two groups, one group containing indices with
+  // corresponding ColorBlocks, and one without.
+  std::vector<Index3D> block_indices_in_semantic_layer;
+  std::vector<Index3D> block_indices_not_in_semantic_layer;
+  block_indices_in_semantic_layer.reserve(block_indices.size());
+  block_indices_not_in_semantic_layer.reserve(block_indices.size());
+  for (const Index3D& block_idx : block_indices) {
+    if (semantic_layer.isBlockAllocated(block_idx)) {
+      block_indices_in_semantic_layer.push_back(block_idx);
+    } else {
+      block_indices_not_in_semantic_layer.push_back(block_idx);
+    }
+  }
+
+  // Color
+  colorMeshBlockByClosestColorVoxelGPU(
+      semantic_layer, block_indices_in_semantic_layer, mesh_layer, cuda_stream_);
+  colorMeshBlocksConstantGPU(block_indices_not_in_semantic_layer,
+                             default_mesh_color_, mesh_layer, cuda_stream_);
+}
+
 void MeshIntegrator::colorMeshCPU(const ColorLayer& color_layer,
                                   BlockLayer<MeshBlock>* mesh_layer) {
   colorMeshCPU(color_layer, mesh_layer->getAllBlockIndices(), mesh_layer);
@@ -285,6 +409,33 @@ void MeshIntegrator::colorMeshCPU(const ColorLayer& color_layer,
       const ColorVoxel* color_voxel;
       if (getVoxelAtPosition<ColorVoxel>(color_layer, vertex, &color_voxel)) {
         block->colors[i] = color_voxel->color;
+      } else {
+        block->colors[i] = Color::Gray();
+      }
+    }
+  }
+}
+
+void MeshIntegrator::colorMeshCPU(const SemanticLayer& semantic_layer,
+                                  BlockLayer<MeshBlock>* mesh_layer) {
+  colorMeshCPU(semantic_layer, mesh_layer->getAllBlockIndices(), mesh_layer);
+}
+
+void MeshIntegrator::colorMeshCPU(const SemanticLayer& semantic_layer,
+                                  const std::vector<Index3D>& block_indices,
+                                  BlockLayer<MeshBlock>* mesh_layer) {
+  // For each vertex just grab the closest color
+  for (const Index3D& block_idx : block_indices) {
+    MeshBlock::Ptr block = mesh_layer->getBlockAtIndex(block_idx);
+    if (block == nullptr) {
+      continue;
+    }
+    block->colors.resize(block->vertices.size());
+    for (int i = 0; i < block->vertices.size(); i++) {
+      const Vector3f& vertex = block->vertices[i];
+      const SemanticVoxel* semantic_voxel;
+      if (getVoxelAtPosition<SemanticVoxel>(semantic_layer, vertex, &semantic_voxel)) {
+        block->colors[i] = semantic_voxel->sid;
       } else {
         block->colors[i] = Color::Gray();
       }

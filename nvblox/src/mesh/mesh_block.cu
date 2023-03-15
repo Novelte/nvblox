@@ -87,6 +87,7 @@ CudaMeshBlock::CudaMeshBlock(MeshBlock* block) {
   normals = block->normals.data();
   triangles = block->triangles.data();
   colors = block->colors.data();
+  sid = block->sid.data();
 
   vertices_size = block->vertices.size();
   triangles_size = block->triangles.size();

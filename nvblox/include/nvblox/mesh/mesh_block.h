@@ -46,6 +46,7 @@ struct MeshBlock {
   // triangles with the indexed vertices as their corners.
   unified_vector<Vector3f> vertices;
   unified_vector<Vector3f> normals;
+  unified_vector<Color> sid;
   unified_vector<Color> colors;
   unified_vector<int> triangles;
 
@@ -82,6 +83,7 @@ struct CudaMeshBlock {
   Vector3f* vertices;
   Vector3f* normals;
   int* triangles;
+  Color* sid;
   Color* colors;
   int vertices_size = 0;
   int triangles_size = 0;

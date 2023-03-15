@@ -22,7 +22,7 @@ namespace nvblox {
 
 RgbdMapper::RgbdMapper(float voxel_size_m, MemoryType memory_type)
     : voxel_size_m_(voxel_size_m), memory_type_(memory_type) {
-  layers_ = LayerCake::create<TsdfLayer, ColorLayer, EsdfLayer, MeshLayer>(
+  layers_ = LayerCake::create<TsdfLayer, ColorLayer, SemanticLayer, EsdfLayer, MeshLayer>(
       voxel_size_m_, memory_type);
 }
 
@@ -63,7 +63,14 @@ void RgbdMapper::integrateColor(const ColorImage& color_frame,
                                    layers_.getPtr<ColorLayer>());
 }
 
-std::vector<Index3D> RgbdMapper::updateMesh() {
+void RgbdMapper::integrateSemantic(const ColorImage& color_frame,
+                                    const Transform& T_L_C, const Camera& camera) {
+  semantic_integrator_.integrateFrame(color_frame, T_L_C, camera,
+                                   layers_.get<TsdfLayer>(),
+                                   layers_.getPtr<SemanticLayer>());
+}
+
+std::vector<Index3D> RgbdMapper::updateMesh(bool display_semantic) {
   // Convert the set of MeshBlocks needing an update to a vector
   std::vector<Index3D> mesh_blocks_to_update_vector(
       mesh_blocks_to_update_.begin(), mesh_blocks_to_update_.end());
@@ -73,9 +80,18 @@ std::vector<Index3D> RgbdMapper::updateMesh() {
                                       mesh_blocks_to_update_vector,
                                       layers_.getPtr<MeshLayer>());
 
-  mesh_integrator_.colorMesh(layers_.get<ColorLayer>(),
-                             mesh_blocks_to_update_vector,
-                             layers_.getPtr<MeshLayer>());
+  if (display_semantic)
+  {
+    mesh_integrator_.colorMesh(layers_.get<SemanticLayer>(),
+                              mesh_blocks_to_update_vector,
+                              layers_.getPtr<MeshLayer>());
+  }
+  else
+  {
+    mesh_integrator_.colorMesh(layers_.get<ColorLayer>(),
+                              mesh_blocks_to_update_vector,
+                              layers_.getPtr<MeshLayer>());    
+  }
 
   // Mark blocks as updated
   mesh_blocks_to_update_.clear();
