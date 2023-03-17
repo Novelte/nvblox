@@ -21,6 +21,7 @@ MeshBlock::MeshBlock(MemoryType memory_type)
     : vertices(memory_type),
       normals(memory_type),
       colors(memory_type),
+      semantic_colors(memory_type),
       triangles(memory_type) {}
 
 MeshBlock::MeshBlock(const MeshBlock& mesh_block)
@@ -30,6 +31,7 @@ MeshBlock::MeshBlock(const MeshBlock& mesh_block, MemoryType memory_type)
     : vertices(mesh_block.vertices, memory_type),
       normals(mesh_block.normals, memory_type),
       colors(mesh_block.colors, memory_type),
+      semantic_colors(mesh_block.semantic_colors, memory_type),
       triangles(mesh_block.triangles, memory_type) {}
 
 void MeshBlock::clear() {
@@ -37,6 +39,7 @@ void MeshBlock::clear() {
   normals.resize(0);
   triangles.resize(0);
   colors.resize(0);
+  semantic_colors.resize(0);
 }
 
 void MeshBlock::resizeToNumberOfVertices(size_t new_size) {
@@ -82,6 +85,8 @@ size_t MeshBlock::capacity() const { return vertices.capacity(); }
 void MeshBlock::expandColorsToMatchVertices() {
   colors.reserve(vertices.capacity());
   colors.resize(vertices.size());
+  semantic_colors.reserve(vertices.capacity());
+  semantic_colors.resize(vertices.size());
 }
 
 // Set the pointers to point to the mesh block.
