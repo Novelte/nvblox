@@ -63,11 +63,12 @@ void RgbdMapper::integrateColor(const ColorImage& color_frame,
                                    layers_.getPtr<ColorLayer>());
 }
 
-void RgbdMapper::integrateSemantic(const ColorImage& color_frame,
+void RgbdMapper::integrateSemantic(const SemanticImage& semantic_frame,
                                     const Transform& T_L_C, const Camera& camera) {
-  semantic_integrator_.integrateFrame(color_frame, T_L_C, camera,
+  semantic_integrator_.integrateFrame(semantic_frame, T_L_C, camera,
                                    layers_.get<TsdfLayer>(),
-                                   layers_.getPtr<SemanticLayer>());
+                                   layers_.getPtr<SemanticLayer>(), 
+                                   layers_.getPtr<ColorLayer>()); 
 }
 
 std::vector<Index3D> RgbdMapper::updateMesh(bool display_semantic) {
@@ -80,18 +81,18 @@ std::vector<Index3D> RgbdMapper::updateMesh(bool display_semantic) {
                                       mesh_blocks_to_update_vector,
                                       layers_.getPtr<MeshLayer>());
 
-  if (display_semantic)
-  {
-    mesh_integrator_.colorMesh(layers_.get<SemanticLayer>(),
-                              mesh_blocks_to_update_vector,
-                              layers_.getPtr<MeshLayer>());
-  }
-  else
-  {
-    mesh_integrator_.colorMesh(layers_.get<ColorLayer>(),
-                              mesh_blocks_to_update_vector,
-                              layers_.getPtr<MeshLayer>());    
-  }
+  // if (display_semantic)
+  // {
+  //   mesh_integrator_.colorMesh(layers_.get<SemanticLayer>(),
+  //                             mesh_blocks_to_update_vector,
+  //                             layers_.getPtr<MeshLayer>());
+  // }
+  // else
+  // {
+  mesh_integrator_.colorMesh(layers_.get<ColorLayer>(),
+                            mesh_blocks_to_update_vector,
+                            layers_.getPtr<MeshLayer>());    
+  // }
 
   // Mark blocks as updated
   mesh_blocks_to_update_.clear();

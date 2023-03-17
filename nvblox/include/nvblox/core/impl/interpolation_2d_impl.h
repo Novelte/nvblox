@@ -49,6 +49,18 @@ __host__ __device__ inline Color interpolatePixels(const Vector2f& xy_px,
           std::round(interpolatePixels(xy_px, c00.b, c01.b, c10.b, c11.b))));
 }
 
+__host__ __device__ inline Semantic interpolatePixels(const Vector2f& xy_px,
+                                                   const Semantic& c00,
+                                                   const Semantic& c01,
+                                                   const Semantic& c10,
+                                                   const Semantic& c11) {
+  // We define interpolating two classes as independently interpolating their
+  // channels.
+  return Semantic(
+      static_cast<uint8_t>(
+          std::round(interpolatePixels(xy_px, c00.id, c01.id, c10.id, c11.id))));
+}
+
 template <typename ElementType, typename PixelValidityChecker>
 __device__ inline bool neighboursValid(const ElementType& p00,
                                        const ElementType& p01,

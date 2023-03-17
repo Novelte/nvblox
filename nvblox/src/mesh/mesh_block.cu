@@ -71,6 +71,10 @@ std::vector<Color> MeshBlock::getColorVectorOnCPU() const {
   return colors.toVector();
 }
 
+std::vector<Color> MeshBlock::getSemanticColorVectorOnCPU() const {
+  return semantic_colors.toVector();
+}
+
 size_t MeshBlock::size() const { return vertices.size(); }
 
 size_t MeshBlock::capacity() const { return vertices.capacity(); }
@@ -87,7 +91,7 @@ CudaMeshBlock::CudaMeshBlock(MeshBlock* block) {
   normals = block->normals.data();
   triangles = block->triangles.data();
   colors = block->colors.data();
-  sid = block->sid.data();
+  semantic_colors = block->semantic_colors.data();
 
   vertices_size = block->vertices.size();
   triangles_size = block->triangles.size();

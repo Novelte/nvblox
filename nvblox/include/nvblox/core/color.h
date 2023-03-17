@@ -50,6 +50,7 @@ struct Color {
   static const Color Purple() { return Color(127, 0, 255); }
   static const Color Teal() { return Color(0, 255, 255); }
   static const Color Pink() { return Color(255, 0, 127); }
+  Color Random() { return Color(rand()%255 , rand()%255, rand()%255); }
 };
 
 }  // namespace nvblox

@@ -98,12 +98,12 @@ class RgbdMapper : public MapperBase {
   void integrateColor(const ColorImage& color_frame, const Transform& T_L_C,
                       const Camera& camera);
 
-  /// Integrates a color frame into the reconstruction.
-  ///@param color_frame Color image to integrate.
+  /// Integrates a semantic frame into the reconstruction.
+  ///@param semantic_frame Semeatic image to integrate.
   ///@param T_L_C Pose of the camera, specified as a transform from Camera-frame
   ///             to Layer-frame transform.
   ///@param camera Intrinsics model of the camera.
-  void integrateSemantic(const ColorImage& color_frame, const Transform& T_L_C,
+  void integrateSemantic(const SemanticImage& semantic_frame, const Transform& T_L_C,
                          const Camera& camera);
 
   /// Integrates a 3D LiDAR scan into the reconstruction.
@@ -178,6 +178,9 @@ class RgbdMapper : public MapperBase {
   /// Getter
   ///@return const MeshLayer& Mesh layer
   const MeshLayer& mesh_layer() const { return layers_.get<MeshLayer>(); }
+  /// Getter
+  ///@return const SemanticLayer& Semantic layer
+  const SemanticLayer& semantic_layer() const { return layers_.get<SemanticLayer>(); }
 
   /// Getter
   ///@return const LayerCake& The collection of layers mapped.
@@ -194,6 +197,9 @@ class RgbdMapper : public MapperBase {
   /// Getter
   ///@return const MeshLayer& Mesh layer
   MeshLayer& mesh_layer() { return *layers_.getPtr<MeshLayer>(); }
+  /// Getter
+  ///@return const SemanticLayer& Semantic layer
+  SemanticLayer& semantic_layer() { return *layers_.getPtr<SemanticLayer>(); }
 
   /// Getter
   ///@return const ProjectiveTsdfIntegrator& TSDF integrator used for

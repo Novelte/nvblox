@@ -46,7 +46,7 @@ struct MeshBlock {
   // triangles with the indexed vertices as their corners.
   unified_vector<Vector3f> vertices;
   unified_vector<Vector3f> normals;
-  unified_vector<Color> sid;
+  unified_vector<Color> semantic_colors;
   unified_vector<Color> colors;
   unified_vector<int> triangles;
 
@@ -68,6 +68,7 @@ struct MeshBlock {
   std::vector<Vector3f> getNormalVectorOnCPU() const;
   std::vector<int> getTriangleVectorOnCPU() const;
   std::vector<Color> getColorVectorOnCPU() const;
+  std::vector<Color> getSemanticColorVectorOnCPU() const;
 
   // Note(alexmillane): Memory type ignored, MeshBlocks live in CPU memory.
   static Ptr allocate(MemoryType memory_type);
@@ -83,7 +84,7 @@ struct CudaMeshBlock {
   Vector3f* vertices;
   Vector3f* normals;
   int* triangles;
-  Color* sid;
+  Color* semantic_colors;
   Color* colors;
   int vertices_size = 0;
   int triangles_size = 0;

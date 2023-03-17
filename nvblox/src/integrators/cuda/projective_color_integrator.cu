@@ -163,8 +163,8 @@ __device__ inline bool updateSemanticVoxel(const Color color_measured,
   // TODO(alexmillane): The above.
 
   // Read CURRENT voxel values (from global GPU memory)
-  const Color voxel_color_current = voxel_ptr->sid;
-  const float voxel_weight_current = voxel_ptr->weight_sid;
+  const Color voxel_color_current = voxel_ptr->semantic_color;
+  const float voxel_weight_current = voxel_ptr->weight_semantic;
   // Fuse
   constexpr float measurement_weight = 1.0f;
   Color fused_color;
@@ -183,8 +183,8 @@ __device__ inline bool updateSemanticVoxel(const Color color_measured,
   }
 
   // Write NEW voxel values (to global GPU memory)
-  voxel_ptr->sid = fused_color;
-  voxel_ptr->weight_sid = weight;
+  voxel_ptr->semantic_color = fused_color;
+  voxel_ptr->weight_semantic = weight;
   return true;
 }
 

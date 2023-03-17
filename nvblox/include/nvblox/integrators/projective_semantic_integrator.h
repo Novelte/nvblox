@@ -17,6 +17,7 @@ limitations under the License.
 
 #include "nvblox/core/common_names.h"
 #include "nvblox/core/layer.h"
+#include "nvblox/core/types.h"
 #include "nvblox/integrators/projective_integrator_base.h"
 #include "nvblox/rays/sphere_tracer.h"
 
@@ -37,8 +38,8 @@ class ProjectiveSemanticIntegrator : public ProjectiveIntegratorBase {
   /// launching asynchronous work)
   void finish() const override;
 
-  /// Integrates a semantic color image into the passed semantic layer.
-  /// @param semantic_frame A semantic color image.
+  /// Integrates a semantic image into the passed semantic layer.
+  /// @param semantic_frame A semantic image.
   /// @param T_L_C The pose of the camera. Supplied as a Transform mapping
   /// points in the camera frame (C) to the layer frame (L).
   /// @param camera A the camera (intrinsics) model.
@@ -49,9 +50,29 @@ class ProjectiveSemanticIntegrator : public ProjectiveIntegratorBase {
   /// intergrated.
   /// @param updated_blocks Optional pointer to a vector which will contain the
   /// 3D indices of blocks affected by the integration.
-  void integrateFrame(const ColorImage& semantic_frame, const Transform& T_L_C,
+  void integrateFrame(const SemanticImage& semantic_frame, const Transform& T_L_C,
                       const Camera& camera, const TsdfLayer& tsdf_layer,
                       SemanticLayer* semantic_layer,
+                      std::vector<Index3D>* updated_blocks = nullptr);
+
+  /// Integrates a semantic image into the passed semantic layer.
+  /// @param semantic_frame A semantic image.
+  /// @param T_L_C The pose of the camera. Supplied as a Transform mapping
+  /// points in the camera frame (C) to the layer frame (L).
+  /// @param camera A the camera (intrinsics) model.
+  /// @param tsdf_layer The TSDF layer with which the semantic layer associated.
+  /// Semantic integration is only performed on the voxels corresponding to the
+  /// truncation band of this layer.
+  /// @param semantic_layer A pointer to the semantic layer into which this 
+  /// image will be intergrated.
+  /// @param color_layer A pointer to the color layer into which this image will
+  /// be intergrated.
+  /// @param color_map A pointer to the color map.
+  /// @param updated_blocks Optional pointer to a vector which will contain the
+  /// 3D indices of blocks affected by the integration.
+  void integrateFrame(const SemanticImage& semantic_frame, const Transform& T_L_C,
+                      const Camera& camera, const TsdfLayer& tsdf_layer,
+                      SemanticLayer* semantic_layer, ColorLayer* color_layer,
                       std::vector<Index3D>* updated_blocks = nullptr);
 
   /// Returns the sphere tracer used for semantic integration.
@@ -66,7 +87,7 @@ class ProjectiveSemanticIntegrator : public ProjectiveIntegratorBase {
   SphereTracer& sphere_tracer() { return sphere_tracer_; }
 
   /// A parameter getter
-  /// We find a surface on which to integrate semantic color by sphere tracing from the
+  /// We find a surface on which to integrate semantic by sphere tracing from the
   /// camera. This is a relatively expensive operation. This parameter controls
   /// how many rays are traced for an image. For example, for a 100px by 100px
   /// image with a subsampling factor of 4, 25x25 rays are traced.
@@ -80,13 +101,21 @@ class ProjectiveSemanticIntegrator : public ProjectiveIntegratorBase {
       int sphere_tracing_ray_subsampling_factor);
 
  protected:
-  // Given a set of blocks in view (block_indices) perform semantic color updates on all
+  // Given a set of blocks in view (block_indices) perform semantic updates on all
   // voxels within these blocks on the GPU.
   void updateBlocks(const std::vector<Index3D>& block_indices,
-                    const ColorImage& semantic_frame,
+                    const SemanticImage& semantic_frame,
                     const DepthImage& depth_frame, const Transform& T_L_C,
                     const Camera& camera, const float truncation_distance_m,
-                    SemanticLayer* layer);
+                    SemanticLayer* semantic_layer_ptr);
+
+  // Given a set of blocks in view (block_indices) perform semantic updates on all
+  // voxels within these blocks on the GPU.
+  void updateBlocks(const std::vector<Index3D>& block_indices,
+                    const SemanticImage& semantic_frame,
+                    const DepthImage& depth_frame, const Transform& T_L_C,
+                    const Camera& camera, const float truncation_distance_m,
+                    SemanticLayer* semantic_layer_ptr, ColorLayer* color_layer_ptr);
 
   // Takes a list of block indices and returns a subset containing the block
   // indices containing at least on voxel inside the truncation band of the
@@ -105,9 +134,16 @@ class ProjectiveSemanticIntegrator : public ProjectiveIntegratorBase {
   // NOTE(alexmillane): We have one pinned host and one device vector and
   // transfer between them.
   device_vector<Index3D> block_indices_device_;
-  device_vector<SemanticBlock*> block_ptrs_device_;
+  device_vector<SemanticBlock*> semantic_block_ptrs_device_;
+  device_vector<ColorBlock*> color_block_ptrs_device_;
   host_vector<Index3D> block_indices_host_;
-  host_vector<SemanticBlock*> block_ptrs_host_;
+  host_vector<SemanticBlock*> semantic_block_ptrs_host_;
+  host_vector<ColorBlock*> color_block_ptrs_host_;
+  // Color Maps
+  device_vector<Color> semantic_color_map_device_;
+  host_vector<Color> semantic_color_map_host_;
+  
+
 
   // Buffers for getting blocks in truncation band
   device_vector<const TsdfBlock*> truncation_band_block_ptrs_device_;
