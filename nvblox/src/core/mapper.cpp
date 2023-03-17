@@ -71,7 +71,7 @@ void RgbdMapper::integrateSemantic(const SemanticImage& semantic_frame,
                                    layers_.getPtr<ColorLayer>()); 
 }
 
-std::vector<Index3D> RgbdMapper::updateMesh(bool display_semantic) {
+std::vector<Index3D> RgbdMapper::updateMesh() {
   // Convert the set of MeshBlocks needing an update to a vector
   std::vector<Index3D> mesh_blocks_to_update_vector(
       mesh_blocks_to_update_.begin(), mesh_blocks_to_update_.end());
@@ -81,18 +81,9 @@ std::vector<Index3D> RgbdMapper::updateMesh(bool display_semantic) {
                                       mesh_blocks_to_update_vector,
                                       layers_.getPtr<MeshLayer>());
 
-  // if (display_semantic)
-  // {
-  //   mesh_integrator_.colorMesh(layers_.get<SemanticLayer>(),
-  //                             mesh_blocks_to_update_vector,
-  //                             layers_.getPtr<MeshLayer>());
-  // }
-  // else
-  // {
   mesh_integrator_.colorMesh(layers_.get<ColorLayer>(),
                             mesh_blocks_to_update_vector,
                             layers_.getPtr<MeshLayer>());    
-  // }
 
   // Mark blocks as updated
   mesh_blocks_to_update_.clear();
