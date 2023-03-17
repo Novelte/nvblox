@@ -27,8 +27,10 @@ ProjectiveSemanticIntegrator::ProjectiveSemanticIntegrator()
   checkCudaErrors(cudaStreamCreate(&integration_stream_));
   for (size_t i=0; i < 255; i++)
   {
-    semantic_color_map_device_.push_back(Color::Random());
+    semantic_color_map_host_.push_back(Color::Random());
   }
+
+  semantic_color_map_device_ = semantic_color_map_host_;
 }
 
 ProjectiveSemanticIntegrator::~ProjectiveSemanticIntegrator() {
