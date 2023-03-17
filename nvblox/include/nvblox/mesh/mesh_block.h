@@ -62,12 +62,14 @@ struct MeshBlock {
   // Resize colors/intensities such that:
   // `colors.size()/intensities.size() == vertices.size()`
   void expandColorsToMatchVertices();
+  void expandSemanticToMatchVertices();
 
   // Copy mesh data to the CPU.
   std::vector<Vector3f> getVertexVectorOnCPU() const;
   std::vector<Vector3f> getNormalVectorOnCPU() const;
   std::vector<int> getTriangleVectorOnCPU() const;
   std::vector<Color> getColorVectorOnCPU() const;
+  std::vector<Color> getSemanticVectorOnCPU() const;
 
   // Note(alexmillane): Memory type ignored, MeshBlocks live in CPU memory.
   static Ptr allocate(MemoryType memory_type);

@@ -102,6 +102,7 @@ __global__ void colorMeshBlockByClosestColorVoxel(
 
     // Write the color out to global memory
     cuda_mesh_block.colors[i] = color_voxel.color;
+    cuda_mesh_block.sid[i] = color_voxel.sid;
   }
 }
 
