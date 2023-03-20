@@ -22,6 +22,7 @@ namespace test_utils {
 
 void setImageConstantOnGpu(const float value, DepthImage* image_ptr);
 void setImageConstantOnGpu(const Color value, ColorImage* image_ptr);
+void setImageConstantOnGpu(const Semantic value, SemanticImage* image_ptr);
 
 }  // namespace test_utils
 }  // namespace nvblox
