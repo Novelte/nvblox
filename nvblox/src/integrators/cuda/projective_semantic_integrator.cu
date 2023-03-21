@@ -276,7 +276,7 @@ __global__ void integrateBlocks(
   const Eigen::Vector2f u_px_depth =
       u_px / static_cast<float>(depth_subsample_factor);
   float surface_depth_m;
-  if (!interpolation::interpolate2DLinear<float>(
+  if (!interpolation::interpolate2DClosest<float>(
           depth_image, u_px_depth, depth_rows, depth_cols, &surface_depth_m)) {
     return;
   }
@@ -290,7 +290,7 @@ __global__ void integrateBlocks(
   }
 
   Semantic image_value;
-  if (!interpolation::interpolate2DLinear<Semantic>(semantic_image, u_px, semantic_rows,
+  if (!interpolation::interpolate2DClosest<Semantic>(semantic_image, u_px, semantic_rows,
                                                  semantic_cols, &image_value)) {
     return;
   }
@@ -338,7 +338,7 @@ __global__ void integrateBlocks(
   const Eigen::Vector2f u_px_depth =
       u_px / static_cast<float>(depth_subsample_factor);
   float surface_depth_m;
-  if (!interpolation::interpolate2DLinear<float>(
+  if (!interpolation::interpolate2DClosest<float>(
           depth_image, u_px_depth, depth_rows, depth_cols, &surface_depth_m)) {
     return;
   }
@@ -352,7 +352,7 @@ __global__ void integrateBlocks(
   }
 
   Semantic image_value;
-  if (!interpolation::interpolate2DLinear<Semantic>(semantic_image, u_px, semantic_rows,
+  if (!interpolation::interpolate2DClosest<Semantic>(semantic_image, u_px, semantic_rows,
                                                  semantic_cols, &image_value)) {
     return;
   }
