@@ -25,7 +25,8 @@ ProjectiveSemanticIntegrator::ProjectiveSemanticIntegrator()
     : ProjectiveIntegratorBase() {
   sphere_tracer_.maximum_ray_length_m(max_integration_distance_m_);
   checkCudaErrors(cudaStreamCreate(&integration_stream_));
-  for (size_t i=0; i < 255; i++)
+  semantic_color_map_host_.push_back(Color::Blue());
+  for (size_t i=1; i < 255; i++)
   {
     semantic_color_map_host_.push_back(Color(rand()%255, rand()%255, rand()%255));
   }
@@ -212,39 +213,42 @@ __device__ inline bool updateVoxel(const Semantic semantic_measured,
   return true;
 }
 
-__device__ inline bool updateVoxel(const Color color_measured,
-                                   ColorVoxel* voxel_ptr,
-                                   const float voxel_depth_m,
-                                   const float truncation_distance_m,
-                                   const float max_weight) {
+__device__ inline bool updateVoxel(const Semantic semantic_measured,
+                                            SemanticVoxel* voxel_ptr,
+                                            ColorVoxel* color_voxel_ptr,
+                                            const float voxel_depth_m,
+                                            const float truncation_distance_m,
+                                            const float max_weight,
+                                            const Color* color_map) {
   // NOTE(alexmillane): We integrate all voxels passed to this function, We
   // should probably not do this. We should no update some based on occlusion
   // and their distance in the distance field....
   // TODO(alexmillane): The above.
 
   // Read CURRENT voxel values (from global GPU memory)
-  const Color voxel_color_current = voxel_ptr->semantic_color;
-  const float voxel_weight_current = voxel_ptr->weight_semantic;
+  const Semantic voxel_semantic_current = voxel_ptr->id;
+  const float voxel_weight_current = voxel_ptr->weight;
   // Fuse
   constexpr float measurement_weight = 1.0f;
-  Color fused_color;
+  Semantic fused_semantic;
   float weight = 0.0f;
-  // If the same color, update the confidence to the average
-  if(voxel_color_current.r == color_measured.r && voxel_color_current.g == color_measured.g && voxel_color_current.b == color_measured.b)
+  // If the same semantic id, update the confidence to the average
+  if(voxel_semantic_current.id == semantic_measured.id)
   {
-    fused_color = color_measured;
+    fused_semantic = semantic_measured;
     weight = fmin(measurement_weight + voxel_weight_current, max_weight);
   }
-  // If color is different, keep the larger one and drop a little for the disagreement
+  // If semantic id is different, keep the larger one and drop a little for the disagreement
   else
   {
-    fused_color = voxel_weight_current > measurement_weight ? voxel_color_current : color_measured;
+    fused_semantic = voxel_weight_current > measurement_weight ? voxel_semantic_current : semantic_measured;
     weight = fmin(0.5*voxel_weight_current, max_weight);
   }
 
   // Write NEW voxel values (to global GPU memory)
-  voxel_ptr->semantic_color = fused_color;
-  voxel_ptr->weight_semantic = weight;
+  voxel_ptr->id = fused_semantic;
+  voxel_ptr->weight = weight;
+  color_voxel_ptr->semantic_color = color_map[fused_semantic.id];
   return true;
 }
 
@@ -371,10 +375,8 @@ __global__ void integrateBlocks(
             ->voxels[threadIdx.z][threadIdx.y][threadIdx.x]);
 
   // Update the voxel using the update rule for this layer type
-  updateVoxel(image_value, semantic_voxel_ptr, voxel_depth_m, truncation_distance_m,
-              max_weight);
-  updateVoxel(color_map[image_value.id], color_voxel_ptr, voxel_depth_m, truncation_distance_m,
-              max_weight);
+  updateVoxel(image_value, semantic_voxel_ptr, color_voxel_ptr, voxel_depth_m, 
+              truncation_distance_m, max_weight, color_map);
 }
 
 void ProjectiveSemanticIntegrator::updateBlocks(
