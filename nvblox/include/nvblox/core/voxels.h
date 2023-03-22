@@ -18,6 +18,7 @@ limitations under the License.
 #include <Eigen/Core>
 
 #include "nvblox/core/color.h"
+#include "nvblox/core/semantic.h"
 
 namespace nvblox {
 
@@ -45,6 +46,14 @@ struct EsdfVoxel {
 
 struct ColorVoxel {
   Color color = Color::Gray();
+  Color semantic_color =  Color::Gray();
+  // How many observations/how confident we are in this observation.
+  float weight = 0.0f;
+  float weight_semantic = 0.0f;
+};
+
+struct SemanticVoxel {
+  Semantic id = Semantic::Unknown();
   // How many observations/how confident we are in this observation.
   float weight = 0.0f;
 };

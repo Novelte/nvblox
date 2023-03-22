@@ -152,6 +152,42 @@ __device__ inline bool updateVoxel(const Color color_measured,
   return true;
 }
 
+__device__ inline bool updateSemanticVoxel(const Color color_measured,
+                                            ColorVoxel* voxel_ptr,
+                                            const float voxel_depth_m,
+                                            const float truncation_distance_m,
+                                            const float max_weight) {
+  // NOTE(alexmillane): We integrate all voxels passed to this function, We
+  // should probably not do this. We should no update some based on occlusion
+  // and their distance in the distance field....
+  // TODO(alexmillane): The above.
+
+  // Read CURRENT voxel values (from global GPU memory)
+  const Color voxel_color_current = voxel_ptr->semantic_color;
+  const float voxel_weight_current = voxel_ptr->weight_semantic;
+  // Fuse
+  constexpr float measurement_weight = 1.0f;
+  Color fused_color;
+  float weight = 0.0f;
+  // If the same color, update the confidence to the average
+  if(voxel_color_current.r == color_measured.r && voxel_color_current.g == color_measured.g && voxel_color_current.b == color_measured.b)
+  {
+    fused_color = color_measured;
+    weight = fmin(measurement_weight + voxel_weight_current, max_weight);
+  }
+  // If color is different, keep the larger one and drop a little for the disagreement
+  else
+  {
+    fused_color = voxel_weight_current > measurement_weight ? voxel_color_current : color_measured;
+    weight = fmin(0.5*voxel_weight_current, max_weight);
+  }
+
+  // Write NEW voxel values (to global GPU memory)
+  voxel_ptr->semantic_color = fused_color;
+  voxel_ptr->weight_semantic = weight;
+  return true;
+}
+
 __global__ void integrateBlocks(
     const Index3D* block_indices_device_ptr, const Camera camera,
     const Color* color_image, const int color_rows, const int color_cols,

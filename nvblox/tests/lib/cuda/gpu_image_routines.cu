@@ -57,5 +57,9 @@ void setImageConstantOnGpu(const Color value, ColorImage* image_ptr) {
   setImageConstantOnGpuTemplate<Color>(value, image_ptr);
 }
 
+void setImageConstantOnGpu(const Semantic value, SemanticImage* image_ptr) {
+  setImageConstantOnGpuTemplate<Semantic>(value, image_ptr);
+}
+
 }  // namespace test_utils
 }  // namespace nvblox

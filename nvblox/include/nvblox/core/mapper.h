@@ -27,6 +27,7 @@ limitations under the License.
 #include "nvblox/core/voxels.h"
 #include "nvblox/integrators/esdf_integrator.h"
 #include "nvblox/integrators/projective_color_integrator.h"
+#include "nvblox/integrators/projective_semantic_integrator.h"
 #include "nvblox/integrators/projective_tsdf_integrator.h"
 #include "nvblox/mesh/mesh_integrator.h"
 
@@ -96,6 +97,14 @@ class RgbdMapper : public MapperBase {
   ///@param camera Intrinsics model of the camera.
   void integrateColor(const ColorImage& color_frame, const Transform& T_L_C,
                       const Camera& camera);
+
+  /// Integrates a semantic frame into the reconstruction.
+  ///@param semantic_frame Semeatic image to integrate.
+  ///@param T_L_C Pose of the camera, specified as a transform from Camera-frame
+  ///             to Layer-frame transform.
+  ///@param camera Intrinsics model of the camera.
+  void integrateSemantic(const SemanticImage& semantic_frame, const Transform& T_L_C,
+                         const Camera& camera);
 
   /// Integrates a 3D LiDAR scan into the reconstruction.
   ///@param depth_frame Depth image representing the LiDAR scan. To convert a
@@ -169,6 +178,9 @@ class RgbdMapper : public MapperBase {
   /// Getter
   ///@return const MeshLayer& Mesh layer
   const MeshLayer& mesh_layer() const { return layers_.get<MeshLayer>(); }
+  /// Getter
+  ///@return const SemanticLayer& Semantic layer
+  const SemanticLayer& semantic_layer() const { return layers_.get<SemanticLayer>(); }
 
   /// Getter
   ///@return const LayerCake& The collection of layers mapped.
@@ -185,6 +197,9 @@ class RgbdMapper : public MapperBase {
   /// Getter
   ///@return const MeshLayer& Mesh layer
   MeshLayer& mesh_layer() { return *layers_.getPtr<MeshLayer>(); }
+  /// Getter
+  ///@return const SemanticLayer& Semantic layer
+  SemanticLayer& semantic_layer() { return *layers_.getPtr<SemanticLayer>(); }
 
   /// Getter
   ///@return const ProjectiveTsdfIntegrator& TSDF integrator used for
@@ -204,8 +219,16 @@ class RgbdMapper : public MapperBase {
     return color_integrator_;
   }
   /// Getter
+  ///@return const ProjectiveSemanticIntegrator& Color integrator.
+  const ProjectiveSemanticIntegrator& semantic_integrator() const {
+    return semantic_integrator_;
+  }  
+  /// Getter
   ///@return const MeshIntegrator& Mesh integrator
   const MeshIntegrator& mesh_integrator() const { return mesh_integrator_; }
+  /// Getter
+  ///@return const MeshIntegrator& Mesh integrator
+  const MeshIntegrator& mesh_semantic_integrator() const { return mesh_semantic_integrator_; }  
   /// Getter
   ///@return const EsdfIntegrator& ESDF integrator
   const EsdfIntegrator& esdf_integrator() const { return esdf_integrator_; }
@@ -224,8 +247,14 @@ class RgbdMapper : public MapperBase {
   ///@return const ProjectiveColorIntegrator& Color integrator.
   ProjectiveColorIntegrator& color_integrator() { return color_integrator_; }
   /// Getter
+  ///@return const ProjectiveColorIntegrator& Color integrator.
+  ProjectiveSemanticIntegrator& semantic_integrator() { return semantic_integrator_; }  
+  /// Getter
   ///@return const MeshIntegrator& Mesh integrator
   MeshIntegrator& mesh_integrator() { return mesh_integrator_; }
+  /// Getter
+  ///@return const MeshIntegrator& Mesh integrator
+  MeshIntegrator& mesh_semantic_integrator() { return mesh_semantic_integrator_; }  
   /// Getter
   ///@return const EsdfIntegrator& ESDF integrator
   EsdfIntegrator& esdf_integrator() { return esdf_integrator_; }
@@ -255,7 +284,9 @@ class RgbdMapper : public MapperBase {
   ProjectiveTsdfIntegrator tsdf_integrator_;
   ProjectiveTsdfIntegrator lidar_tsdf_integrator_;
   ProjectiveColorIntegrator color_integrator_;
+  ProjectiveSemanticIntegrator semantic_integrator_;  
   MeshIntegrator mesh_integrator_;
+  MeshIntegrator mesh_semantic_integrator_;  
   EsdfIntegrator esdf_integrator_;
 
   /// These collections keep track of the blocks which need to be updated on the

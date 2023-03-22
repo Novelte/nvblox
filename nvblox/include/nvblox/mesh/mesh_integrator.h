@@ -47,15 +47,15 @@ class MeshIntegrator {
   void colorMesh(const ColorLayer& color_layer, MeshLayer* mesh_layer);
   void colorMesh(const ColorLayer& color_layer,
                  const std::vector<Index3D>& block_indices,
-                 MeshLayer* mesh_layer);
+                 MeshLayer* mesh_layer);           
   void colorMeshGPU(const ColorLayer& color_layer, MeshLayer* mesh_layer);
   void colorMeshGPU(const ColorLayer& color_layer,
                     const std::vector<Index3D>& block_indices,
-                    MeshLayer* mesh_layer);
+                    MeshLayer* mesh_layer);             
   void colorMeshCPU(const ColorLayer& color_layer, MeshLayer* mesh_layer);
   void colorMeshCPU(const ColorLayer& color_layer,
                     const std::vector<Index3D>& block_indices,
-                    MeshLayer* mesh_layer);
+                    MeshLayer* mesh_layer);               
 
   float min_weight() const { return min_weight_; }
   void min_weight(float min_weight) { min_weight_ = min_weight; }

@@ -22,7 +22,7 @@ namespace nvblox {
 
 RgbdMapper::RgbdMapper(float voxel_size_m, MemoryType memory_type)
     : voxel_size_m_(voxel_size_m), memory_type_(memory_type) {
-  layers_ = LayerCake::create<TsdfLayer, ColorLayer, EsdfLayer, MeshLayer>(
+  layers_ = LayerCake::create<TsdfLayer, ColorLayer, SemanticLayer, EsdfLayer, MeshLayer>(
       voxel_size_m_, memory_type);
 }
 
@@ -63,6 +63,14 @@ void RgbdMapper::integrateColor(const ColorImage& color_frame,
                                    layers_.getPtr<ColorLayer>());
 }
 
+void RgbdMapper::integrateSemantic(const SemanticImage& semantic_frame,
+                                    const Transform& T_L_C, const Camera& camera) {
+  semantic_integrator_.integrateFrame(semantic_frame, T_L_C, camera,
+                                   layers_.get<TsdfLayer>(),
+                                   layers_.getPtr<SemanticLayer>(), 
+                                   layers_.getPtr<ColorLayer>()); 
+}
+
 std::vector<Index3D> RgbdMapper::updateMesh() {
   // Convert the set of MeshBlocks needing an update to a vector
   std::vector<Index3D> mesh_blocks_to_update_vector(
@@ -74,8 +82,8 @@ std::vector<Index3D> RgbdMapper::updateMesh() {
                                       layers_.getPtr<MeshLayer>());
 
   mesh_integrator_.colorMesh(layers_.get<ColorLayer>(),
-                             mesh_blocks_to_update_vector,
-                             layers_.getPtr<MeshLayer>());
+                            mesh_blocks_to_update_vector,
+                            layers_.getPtr<MeshLayer>());    
 
   // Mark blocks as updated
   mesh_blocks_to_update_.clear();

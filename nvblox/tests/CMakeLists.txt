@@ -101,6 +101,10 @@ add_executable(test_color_integrator test_color_integrator.cpp)
 target_link_libraries(test_color_integrator nvblox_test_utils)
 gtest_discover_tests(test_color_integrator ${TEST_OPTIONS})
 
+add_executable(test_semantic_integrator test_semantic_integrator.cpp)
+target_link_libraries(test_semantic_integrator nvblox_test_utils)
+gtest_discover_tests(test_semantic_integrator ${TEST_OPTIONS})
+
 add_executable(test_mesh_coloring test_mesh_coloring.cpp)
 target_link_libraries(test_mesh_coloring nvblox_test_utils)
 gtest_discover_tests(test_mesh_coloring ${TEST_OPTIONS})
