@@ -29,6 +29,7 @@ ProjectiveSemanticIntegrator::ProjectiveSemanticIntegrator()
   {
     semantic_color_map_host_.push_back(Color(rand()%255, rand()%255, rand()%255));
   }
+  semantic_color_map_host_.push_back(Color::White());
 
   semantic_color_map_device_ = semantic_color_map_host_;
 }
