@@ -52,8 +52,7 @@ class ProjectiveColorIntegrator : public ProjectiveIntegratorBase {
   void integrateFrame(const ColorImage& color_frame, const Transform& T_L_C,
                       const Camera& camera, const TsdfLayer& tsdf_layer,
                       ColorLayer* color_layer,
-                      std::vector<Index3D>* updated_blocks = nullptr,
-                      bool update_semantic = false);
+                      std::vector<Index3D>* updated_blocks = nullptr);
 
   /// Returns the sphere tracer used for color integration.
   /// In order to perform color integration from an rgb image we have to
@@ -87,7 +86,7 @@ class ProjectiveColorIntegrator : public ProjectiveIntegratorBase {
                     const ColorImage& color_frame,
                     const DepthImage& depth_frame, const Transform& T_L_C,
                     const Camera& camera, const float truncation_distance_m,
-                    ColorLayer* layer, bool updateBlocks = false);
+                    ColorLayer* layer);
 
   // Takes a list of block indices and returns a subset containing the block
   // indices containing at least on voxel inside the truncation band of the

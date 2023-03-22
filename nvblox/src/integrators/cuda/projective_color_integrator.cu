@@ -39,7 +39,7 @@ void ProjectiveColorIntegrator::finish() const {
 void ProjectiveColorIntegrator::integrateFrame(
     const ColorImage& color_frame, const Transform& T_L_C, const Camera& camera,
     const TsdfLayer& tsdf_layer, ColorLayer* color_layer,
-    std::vector<Index3D>* updated_blocks, bool update_semantic) {
+    std::vector<Index3D>* updated_blocks) {
   timing::Timer color_timer("color/integrate");
   CHECK_NOTNULL(color_layer);
   CHECK_EQ(tsdf_layer.block_size(), color_layer->block_size());
@@ -87,7 +87,7 @@ void ProjectiveColorIntegrator::integrateFrame(
   // Calls out to the child-class implementing the integation (GPU)
   timing::Timer update_blocks_timer("color/integrate/update_blocks");
   updateBlocks(block_indices, color_frame, *synthetic_depth_image_ptr, T_L_C,
-               camera, truncation_distance_m, color_layer, update_semantic);
+               camera, truncation_distance_m, color_layer);
   update_blocks_timer.Stop();
 
   if (updated_blocks != nullptr) {
@@ -195,7 +195,7 @@ __global__ void integrateBlocks(
     const Transform T_C_L, const float block_size,
     const float truncation_distance_m, const float max_weight,
     const float max_integration_distance, const int depth_subsample_factor,
-    ColorBlock** block_device_ptrs, bool update_semantic) {
+    ColorBlock** block_device_ptrs) {
   // Get - the image-space projection of the voxel associated with this thread
   //     - the depth associated with the projection.
   Eigen::Vector2f u_px;
@@ -245,22 +245,14 @@ __global__ void integrateBlocks(
             ->voxels[threadIdx.z][threadIdx.y][threadIdx.x]);
 
   // Update the voxel using the update rule for this layer type
-  if (update_semantic)
-  {
-    updateSemanticVoxel(image_value, voxel_ptr, voxel_depth_m, truncation_distance_m,
-                max_weight);
-  }
-  else
-  {
-    updateVoxel(image_value, voxel_ptr, voxel_depth_m, truncation_distance_m,
-                max_weight);
-  }
+  updateVoxel(image_value, voxel_ptr, voxel_depth_m, truncation_distance_m,
+              max_weight);
 }
 
 void ProjectiveColorIntegrator::updateBlocks(
     const std::vector<Index3D>& block_indices, const ColorImage& color_frame,
     const DepthImage& depth_frame, const Transform& T_L_C, const Camera& camera,
-    const float truncation_distance_m, ColorLayer* layer_ptr, bool update_semantic) {
+    const float truncation_distance_m, ColorLayer* layer_ptr) {
   CHECK_NOTNULL(layer_ptr);
   CHECK_EQ(color_frame.rows() % depth_frame.rows(), 0);
   CHECK_EQ(color_frame.cols() % depth_frame.cols(), 0);
@@ -313,8 +305,7 @@ void ProjectiveColorIntegrator::updateBlocks(
       max_weight_,
       max_integration_distance_m_,
       depth_subsampling_factor,
-      block_ptrs_device_.data(),
-      update_semantic);
+      block_ptrs_device_.data());
   // clang-format on
   checkCudaErrors(cudaPeekAtLastError());
 
