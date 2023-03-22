@@ -301,8 +301,10 @@ void MeshIntegrator::colorMeshCPU(const ColorLayer& color_layer,
       const ColorVoxel* color_voxel;
       if (getVoxelAtPosition<ColorVoxel>(color_layer, vertex, &color_voxel)) {
         block->colors[i] = color_voxel->color;
+        block->semantic_colors[i] = color_voxel->semantic_color;
       } else {
         block->colors[i] = Color::Gray();
+        block->semantic_colors[i] = Color::Gray();
       }
     }
   }
