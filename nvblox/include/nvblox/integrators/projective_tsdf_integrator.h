@@ -21,6 +21,7 @@ limitations under the License.
 #include "nvblox/core/image.h"
 #include "nvblox/core/layer.h"
 #include "nvblox/core/lidar.h"
+#include "nvblox/core/radar.h"
 #include "nvblox/core/types.h"
 #include "nvblox/core/voxels.h"
 #include "nvblox/gpu_hash/gpu_layer_view.h"
@@ -65,6 +66,20 @@ class ProjectiveTsdfIntegrator : public ProjectiveIntegratorBase {
                       const Lidar& lidar, TsdfLayer* layer,
                       std::vector<Index3D>* updated_blocks = nullptr);
 
+  // NOTE: Radar
+  /// Integrates a depth image in to the passed TSDF layer.
+  /// @param depth_frame A depth image.
+  /// @param T_L_C The pose of the camera. Supplied as a Transform mapping
+  /// points in the camera frame (C) to the layer frame (L).
+  /// @param radar A the Radar model.
+  /// @param layer A pointer to the layer into which this observation will be
+  /// intergrated.
+  /// @param updated_blocks Optional pointer to a vector which will contain the
+  /// 3D indices of blocks affected by the integration.
+  void integrateFrame(const DepthImage& depth_frame, const Transform& T_L_C,
+                      const Radar& radar, TsdfLayer* layer,
+                      std::vector<Index3D>* updated_blocks = nullptr);
+
   /// Blocks until GPU operations are complete
   /// Ensure outstanding operations are finished (relevant for integrators
   /// launching asynchronous work)
@@ -102,12 +117,19 @@ class ProjectiveTsdfIntegrator : public ProjectiveIntegratorBase {
   float lidar_linear_interpolation_max_allowable_difference_vox_ = 2.0f;
   float lidar_nearest_interpolation_max_allowable_dist_to_ray_vox_ = 0.5f;
 
+  // NOTE(alexmillane): See the getters above for a description.
+  float radar_linear_interpolation_max_allowable_difference_vox_ = 20.0f;
+  float radar_nearest_interpolation_max_allowable_dist_to_ray_vox_ = 5.0f;
+
   // Given a set of blocks in view (block_indices) perform TSDF updates on all
   // voxels within these blocks on the GPU.
   void integrateBlocks(const DepthImage& depth_frame, const Transform& T_C_L,
                        const Camera& camera, TsdfLayer* layer_ptr);
   void integrateBlocks(const DepthImage& depth_frame, const Transform& T_C_L,
                        const Lidar& lidar, TsdfLayer* layer_ptr);
+  // NOTE: Radar
+  void integrateBlocks(const DepthImage& depth_frame, const Transform& T_C_L,
+                       const Radar& radar, TsdfLayer* layer_ptr);
   template <typename SensorType>
   void integrateBlocksTemplate(const std::vector<Index3D>& block_indices,
                                const DepthImage& depth_frame,
