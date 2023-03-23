@@ -53,7 +53,7 @@ struct ColorVoxel {
 };
 
 struct SemanticVoxel {
-  Semantic id = Semantic::Unknown();
+  Semantic id = Semantic(255);
   // How many observations/how confident we are in this observation.
   float weight = 0.0f;
 };

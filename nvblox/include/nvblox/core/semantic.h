@@ -22,7 +22,7 @@ limitations under the License.
 namespace nvblox {
 
 struct Semantic {
-  __host__ __device__ Semantic() : id(0) {}
+  __host__ __device__ Semantic() : id(255) {}
   __host__ __device__ Semantic( uint8_t _id)
       : id(_id) {}
 
