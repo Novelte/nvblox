@@ -41,4 +41,22 @@ void setColorBlockGrayOnGPU(ColorBlock* block_device_ptr) {
   checkCudaErrors(cudaPeekAtLastError());
 }
 
+__global__ void setSemanticBlockUnknown(SemanticBlock* block_device_ptr) {
+  SemanticVoxel* voxel_ptr =
+      &block_device_ptr->voxels[threadIdx.z][threadIdx.y][threadIdx.x];
+  voxel_ptr->id.id = 255;
+  voxel_ptr->weight = 0.0f;
+}
+
+void setSemanticBlockUnknownOnGPU(SemanticBlock* block_device_ptr) {
+  constexpr int kVoxelsPerSide = VoxelBlock<bool>::kVoxelsPerSide;
+  const dim3 kThreadsPerBlock(kVoxelsPerSide, kVoxelsPerSide, kVoxelsPerSide);
+  setSemanticBlockUnknown<<<1, kThreadsPerBlock>>>(block_device_ptr);
+  // NOTE(alexmillane): At the moment we launch this allocation on the default
+  // stream which implicitly synchronizes. At some point in the future we should
+  // probably move this to a stream.
+  // checkCudaErrors(cudaDeviceSynchronize());
+  checkCudaErrors(cudaPeekAtLastError());
+}
+
 }  // namespace nvblox

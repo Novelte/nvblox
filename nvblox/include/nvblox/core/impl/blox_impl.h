@@ -40,6 +40,14 @@ inline void VoxelBlock<ColorVoxel>::initOnGPU(
   setColorBlockGrayOnGPU(block_ptr);
 }
 
+// Initialization specialization for SemanticVoxel which is initialized to 255
+// with zero weight
+template <>
+inline void VoxelBlock<SemanticVoxel>::initOnGPU(
+    VoxelBlock<SemanticVoxel>* block_ptr) {
+  setSemanticBlockUnknownOnGPU(block_ptr);
+}
+
 template <typename BlockType>
 void setBlockBytesZeroOnGPU(BlockType* block_device_ptr) {
   // TODO(alexmillane): This is a cuda call in a public header... Is this

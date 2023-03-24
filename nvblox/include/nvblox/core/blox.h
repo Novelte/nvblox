@@ -38,6 +38,7 @@ struct VoxelBlock {
 template <typename BlockType>
 void setBlockBytesZeroOnGPU(BlockType* block_device_ptr);
 void setColorBlockGrayOnGPU(VoxelBlock<ColorVoxel>* block_device_ptr);
+void setSemanticBlockUnknownOnGPU(VoxelBlock<SemanticVoxel>* block_device_ptr);
 
 }  // namespace nvblox
 
